@@ -1,0 +1,43 @@
+@startuml activity diagram
+
+title Hotel Booking Process
+
+start
+
+:Open Website;
+:Browse Rooms;
+
+if (Found Room?) then (yes)
+  :View Details;
+  :Click Book;
+  
+  if (Logged In?) then (no)
+    :Login;
+  endif
+  
+  :Fill Form;
+  :Submit;
+  
+  if (Available?) then (yes)
+    :Calculate Price;
+    :Pay;
+    
+    if (Payment OK?) then (yes)
+      :Create Booking;
+      :Send Email;
+      :Show Confirmation;
+      stop
+    else (no)
+      :Payment Failed;
+      stop
+    endif
+  else (no)
+    :Not Available;
+    stop
+  endif
+else (no)
+  :No Rooms;
+  stop
+endif
+
+@enduml

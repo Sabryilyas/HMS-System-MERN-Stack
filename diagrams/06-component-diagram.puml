@@ -1,0 +1,371 @@
+@startuml Smart_Hotel_Component_Diagram
+
+skinparam backgroundColor white
+skinparam handwritten false
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+skinparam component {
+    BackgroundColor LightBlue
+    BorderColor Blue
+    FontSize 11
+}
+
+skinparam package {
+    BackgroundColor WhiteSmoke
+    BorderColor Gray
+    BorderThickness 2
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor LightYellow
+    BorderColor Orange
+}
+
+skinparam database {
+    BackgroundColor LightGreen
+    BorderColor Green
+}
+
+skinparam cloud {
+    BackgroundColor LightYellow
+    BorderColor Orange
+}
+
+skinparam note {
+    BackgroundColor LightYellow
+    BorderColor Orange
+}
+
+title Smart Hotel Management System - Component Diagram\n\n
+
+actor "Guest User" as guest
+actor "Admin User" as admin
+actor "Staff User" as staff
+
+package "Frontend Layer (React + Vite)" {
+    
+    package "Pages" {
+        component "HomePage" as homePage
+        component "RoomsPage" as roomsPage
+        component "RoomDetailPage" as roomDetailPage
+        component "CheckoutPage" as checkoutPage
+        component "BookingHistoryPage" as bookingHistoryPage
+        component "AdminDashboard" as adminDashboard
+        component "AdminRoomsPage" as adminRoomsPage
+        component "AdminBookingsPage" as adminBookingsPage
+        component "LoginPage" as loginPage
+        component "RegisterPage" as registerPage
+    }
+    
+    package "Components" {
+        component "Header" as header
+        component "Footer" as footer
+        component "RoomCard" as roomCard
+        component "BookingCard" as bookingCard
+        component "PaymentModal" as paymentModal
+        component "InvoiceModal" as invoiceModal
+        component "CancellationModal" as cancellationModal
+        component "ChromaGrid" as chromaGrid
+    }
+    
+    package "Services" {
+        component "AuthService" as authService
+        component "RoomService" as roomService
+        component "BookingService" as bookingService
+        component "PaymentService" as paymentService
+        component "UserService" as userService
+    }
+    
+    package "Context & State" {
+        component "AuthContext" as authContext
+        component "BookingContext" as bookingContext
+        component "React Router" as router
+    }
+    
+    package "Utils" {
+        component "API Client" as apiClient
+        component "Validators" as validators
+        component "Formatters" as formatters
+        component "MockStripe" as mockStripe
+    }
+}
+
+package "Backend Layer (Node.js + Express)" {
+    
+    component "Express Server" as expressServer
+    
+    package "Routes" {
+        component "Auth Routes" as authRoutes
+        component "Room Routes" as roomRoutes
+        component "Booking Routes" as bookingRoutes
+        component "Payment Routes" as paymentRoutes
+        component "User Routes" as userRoutes
+    }
+    
+    package "Controllers" {
+        component "AuthController" as authController
+        component "RoomController" as roomController
+        component "BookingController" as bookingController
+        component "PaymentController" as paymentController
+        component "UserController" as userController
+    }
+    
+    package "Middleware" {
+        component "Auth Middleware" as authMiddleware
+        component "Error Handler" as errorHandler
+        component "CORS Handler" as corsHandler
+        component "Request Logger" as requestLogger
+        component "Rate Limiter" as rateLimiter
+    }
+    
+    package "Models" {
+        component "User Model" as userModel
+        component "Room Model" as roomModel
+        component "Booking Model" as bookingModel
+        component "Payment Model" as paymentModel
+        component "Invoice Model" as invoiceModel
+    }
+    
+    package "Services" {
+        component "Email Service" as emailService
+        component "Notification Service" as notificationService
+        component "Analytics Service" as analyticsService
+    }
+    
+    package "Utils" {
+        component "JWT Helper" as jwtHelper
+        component "Bcrypt Helper" as bcryptHelper
+        component "Validators" as backendValidators
+    }
+}
+
+package "Data Layer" {
+    database "MongoDB\nAtlas" as mongodb
+    
+    package "Collections" {
+        component "users" as usersCollection
+        component "rooms" as roomsCollection
+        component "bookings" as bookingsCollection
+        component "payments" as paymentsCollection
+        component "invoices" as invoicesCollection
+    }
+}
+
+cloud "Stripe\nPayment Gateway" as stripe
+cloud "Email Server\n(SMTP)" as emailServer
+cloud "Cloud Storage\n(Images)" as cloudStorage
+
+interface "REST API" as restAPI
+interface "HTTP/HTTPS" as http
+interface "WebSocket" as websocket
+interface "Database Connection" as dbConnection
+
+guest --> homePage
+guest --> roomsPage
+guest --> checkoutPage
+guest --> loginPage
+guest --> registerPage
+guest --> bookingHistoryPage
+
+admin --> adminDashboard
+admin --> adminRoomsPage
+admin --> adminBookingsPage
+admin --> loginPage
+
+staff --> loginPage
+
+homePage ..> chromaGrid : uses
+roomsPage ..> chromaGrid : uses
+roomsPage ..> roomCard : uses
+checkoutPage ..> paymentModal : uses
+bookingHistoryPage ..> bookingCard : uses
+bookingHistoryPage ..> invoiceModal : uses
+bookingHistoryPage ..> cancellationModal : uses
+
+homePage ..> header : uses
+homePage ..> footer : uses
+roomsPage ..> header : uses
+roomsPage ..> footer : uses
+
+authService ..> apiClient : uses
+roomService ..> apiClient : uses
+bookingService ..> apiClient : uses
+paymentService ..> apiClient : uses
+userService ..> apiClient : uses
+
+loginPage ..> authService : uses
+registerPage ..> authService : uses
+roomsPage ..> roomService : uses
+checkoutPage ..> bookingService : uses
+checkoutPage ..> paymentService : uses
+bookingHistoryPage ..> bookingService : uses
+adminRoomsPage ..> roomService : uses
+adminBookingsPage ..> bookingService : uses
+
+authContext ..> authService : manages
+bookingContext ..> bookingService : manages
+router ..> authContext : uses
+
+apiClient --> restAPI : HTTP Requests
+restAPI --> expressServer
+
+expressServer --> authRoutes
+expressServer --> roomRoutes
+expressServer --> bookingRoutes
+expressServer --> paymentRoutes
+expressServer --> userRoutes
+
+authRoutes ..> authMiddleware : uses
+roomRoutes ..> authMiddleware : uses
+bookingRoutes ..> authMiddleware : uses
+paymentRoutes ..> authMiddleware : uses
+userRoutes ..> authMiddleware : uses
+
+expressServer ..> corsHandler : uses
+expressServer ..> errorHandler : uses
+expressServer ..> requestLogger : uses
+expressServer ..> rateLimiter : uses
+
+authRoutes --> authController
+roomRoutes --> roomController
+bookingRoutes --> bookingController
+paymentRoutes --> paymentController
+userRoutes --> userController
+
+authController ..> userModel : uses
+roomController ..> roomModel : uses
+bookingController ..> bookingModel : uses
+bookingController ..> roomModel : uses
+paymentController ..> paymentModel : uses
+paymentController ..> bookingModel : uses
+
+authController ..> emailService : uses
+bookingController ..> emailService : uses
+bookingController ..> notificationService : uses
+paymentController ..> emailService : uses
+adminDashboard ..> analyticsService : uses
+
+authMiddleware ..> jwtHelper : uses
+authController ..> bcryptHelper : uses
+authController ..> jwtHelper : uses
+
+userModel --> dbConnection
+roomModel --> dbConnection
+bookingModel --> dbConnection
+paymentModel --> dbConnection
+invoiceModel --> dbConnection
+
+dbConnection --> mongodb
+
+mongodb --> usersCollection
+mongodb --> roomsCollection
+mongodb --> bookingsCollection
+mongodb --> paymentsCollection
+mongodb --> invoicesCollection
+
+paymentController --> stripe : API calls
+paymentModal ..> mockStripe : uses (dev)
+emailService --> emailServer : SMTP
+roomModel ..> cloudStorage : store images
+
+note right of expressServer
+  **Express.js Server**
+  - Port: 5000
+  - Environment: Production
+  - HTTPS enabled
+  - CORS configured
+  - Rate limiting active
+end note
+
+note right of mongodb
+  **MongoDB Atlas**
+  - Cloud-hosted database
+  - Automatic backups
+  - Scalable storage
+  - Replica sets
+  - Connection pooling
+end note
+
+note bottom of authMiddleware
+  **Security Measures:**
+  - JWT token validation
+  - Role-based access control
+  - Request sanitization
+  - XSS prevention
+  - SQL injection prevention
+end note
+
+note bottom of stripe
+  **Payment Processing:**
+  - PCI DSS compliant
+  - Secure card handling
+  - Refund support
+  - Multiple currencies
+  - Webhook integration
+end note
+
+note left of apiClient
+  **API Configuration:**
+  - Base URL: localhost:5000
+  - Timeout: 30s
+  - Retry logic: 3 attempts
+  - Token auto-refresh
+  - Error interceptors
+end note
+
+legend right
+  |= Component Type |= Color |
+  | Frontend Pages | Light Blue |
+  | Frontend Components | Blue |
+  | Frontend Services | Dark Blue |
+  | Backend Routes | Blue |
+  | Backend Controllers | Dark Blue |
+  | Backend Models | Navy Blue |
+  | Database | Green |
+  | External Services | Yellow |
+  
+  **Communication:**
+  --> Direct dependency
+  ..> Uses/Calls
+  
+  **Layers:**
+  1. Presentation (Frontend)
+  2. Application (Backend)
+  3. Data (Database)
+  4. External (Services)
+endlegend
+
+note bottom
+  **Architecture Pattern: Three-Tier Architecture**
+  
+  **Tier 1 - Presentation Layer:**
+  - React frontend with Vite
+  - Responsive UI components
+  - Client-side routing
+  - State management
+  
+  **Tier 2 - Application Layer:**
+  - RESTful API with Express
+  - Business logic in controllers
+  - Authentication & authorization
+  - Data validation
+  
+  **Tier 3 - Data Layer:**
+  - MongoDB for persistence
+  - Mongoose ODM
+  - Data models & schemas
+  - Database operations
+  
+  **Separation of Concerns:**
+  - Clear layer boundaries
+  - Modular components
+  - Reusable services
+  - Scalable architecture
+end note
+
+footer Smart Hotel Management System - Component Diagram\nKingston University BSc (Hons) - CI6125 Software Development Practice\nDeveloped by: [Your Team Name] | Date: December 2025
+
+@enduml

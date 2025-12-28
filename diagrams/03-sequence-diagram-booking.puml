@@ -1,0 +1,313 @@
+@startuml Smart_Hotel_Room_Booking_Sequence_Diagram
+
+!define LIGHTBLUE #E3F2FD
+!define BLUE #2196F3
+!define GREEN #C8E6C9
+!define YELLOW #FFF9C4
+!define RED #FFCDD2
+
+skinparam backgroundColor white
+skinparam handwritten false
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign center
+
+skinparam participant {
+    BackgroundColor LIGHTBLUE
+    BorderColor BLUE
+    FontSize 11
+}
+
+skinparam actor {
+    BackgroundColor #FFE0B2
+    BorderColor #FF9800
+}
+
+skinparam database {
+    BackgroundColor GREEN
+    BorderColor #4CAF50
+}
+
+skinparam note {
+    BackgroundColor YELLOW
+    BorderColor #F57C00
+}
+
+title Smart Hotel Management System - Room Booking Sequence Diagram\n\n
+
+actor "Guest" as Guest
+participant "Frontend\n(React)" as Frontend #E3F2FD
+participant "API Gateway\n(Express)" as API #BBDEFB
+participant "Auth\nMiddleware" as Auth #90CAF9
+participant "Booking\nController" as BookingCtrl #64B5F6
+participant "Room\nController" as RoomCtrl #42A5F5
+participant "Payment\nController" as PaymentCtrl #2196F3
+participant "Email\nService" as Email #1976D2
+database "MongoDB\nDatabase" as DB #C8E6C9
+participant "Stripe\nPayment Gateway" as Stripe #FFE082
+
+== User Authentication ==
+
+Guest -> Frontend : Navigate to /rooms
+activate Frontend
+
+Frontend -> API : GET /api/rooms
+activate API
+
+API -> RoomCtrl : getAllRooms()
+activate RoomCtrl
+
+RoomCtrl -> DB : find({ isAvailable: true })
+activate DB
+DB --> RoomCtrl : Available rooms list
+deactivate DB
+
+RoomCtrl --> API : rooms[]
+deactivate RoomCtrl
+
+API --> Frontend : 200 OK + rooms data
+deactivate API
+
+Frontend --> Guest : Display available rooms
+deactivate Frontend
+
+note right of Guest
+  Guest browses through
+  available rooms with
+  filters (type, price, etc.)
+end note
+
+== Room Selection ==
+
+Guest -> Frontend : Select room & click "Book Now"
+activate Frontend
+
+Frontend --> Guest : Show booking form
+Guest -> Frontend : Enter booking details\n(dates, guests, contact info)
+
+Frontend -> Frontend : Validate form data\n(dates, email, phone)
+
+alt Invalid Data
+    Frontend --> Guest : Show validation errors
+    note right of Frontend
+      Client-side validation:
+      - Check-in < Check-out
+      - Valid email format
+      - Valid phone number
+    end note
+else Valid Data
+    Frontend -> API : POST /api/bookings/check-availability
+    activate API
+    
+    API -> Auth : verifyToken(JWT)
+    activate Auth
+    
+    Auth -> DB : findUser(userId)
+    activate DB
+    DB --> Auth : User data
+    deactivate DB
+    
+    Auth --> API : User authenticated
+    deactivate Auth
+    
+    API -> RoomCtrl : checkAvailability(roomId, dates)
+    activate RoomCtrl
+    
+    RoomCtrl -> DB : find({ roomId, dates overlap })
+    activate DB
+    DB --> RoomCtrl : Existing bookings
+    deactivate DB
+    
+    RoomCtrl -> RoomCtrl : Calculate availability
+    
+    alt Room Not Available
+        RoomCtrl --> API : 409 Conflict
+        API --> Frontend : Room not available
+        Frontend --> Guest : Show error message
+        note right of Guest
+          "Sorry, this room is
+          already booked for
+          selected dates"
+        end note
+    else Room Available
+        RoomCtrl --> API : 200 OK + availability confirmed
+        deactivate RoomCtrl
+        API --> Frontend : Room available
+        deactivate API
+        
+        == Payment Processing ==
+        
+        Frontend --> Guest : Proceed to payment
+        Guest -> Frontend : Click "Pay Now"
+        
+        Frontend -> API : POST /api/payments/create-payment-intent
+        activate API
+        
+        API -> Auth : verifyToken(JWT)
+        activate Auth
+        Auth --> API : User authenticated
+        deactivate Auth
+        
+        API -> PaymentCtrl : createPaymentIntent(amount, currency)
+        activate PaymentCtrl
+        
+        PaymentCtrl -> Stripe : Create Payment Intent
+        activate Stripe
+        Stripe --> PaymentCtrl : clientSecret + paymentIntentId
+        deactivate Stripe
+        
+        PaymentCtrl -> DB : Save payment record\n(status: pending)
+        activate DB
+        DB --> PaymentCtrl : Payment saved
+        deactivate DB
+        
+        PaymentCtrl --> API : clientSecret
+        deactivate PaymentCtrl
+        
+        API --> Frontend : 200 OK + clientSecret
+        deactivate API
+        
+        Frontend --> Guest : Show payment form
+        Guest -> Frontend : Enter card details
+        
+        Frontend -> Stripe : confirmCardPayment(clientSecret, cardDetails)
+        activate Stripe
+        
+        Stripe -> Stripe : Process payment
+        
+        alt Payment Failed
+            Stripe --> Frontend : Payment failed
+            Frontend --> Guest : Show error message
+            note right of Guest
+              "Payment failed.
+              Please try again or
+              use different card"
+            end note
+        else Payment Successful
+            Stripe --> Frontend : Payment successful + paymentIntent
+            deactivate Stripe
+            
+            == Booking Creation ==
+            
+            Frontend -> API : POST /api/bookings
+            activate API
+            
+            API -> Auth : verifyToken(JWT)
+            activate Auth
+            Auth --> API : User authenticated
+            deactivate Auth
+            
+            API -> BookingCtrl : createBooking(bookingData)
+            activate BookingCtrl
+            
+            BookingCtrl -> BookingCtrl : Validate booking data
+            
+            BookingCtrl -> DB : Create booking record
+            activate DB
+            DB --> BookingCtrl : Booking created
+            deactivate DB
+            
+            BookingCtrl -> DB : Update room status
+            activate DB
+            DB --> BookingCtrl : Room updated
+            deactivate DB
+            
+            BookingCtrl -> DB : Update payment status\n(status: paid)
+            activate DB
+            DB --> BookingCtrl : Payment updated
+            deactivate DB
+            
+            BookingCtrl -> BookingCtrl : Generate invoice
+            
+            BookingCtrl -> DB : Save invoice
+            activate DB
+            DB --> BookingCtrl : Invoice saved
+            deactivate DB
+            
+            BookingCtrl --> API : Booking created successfully
+            deactivate BookingCtrl
+            
+            == Notification ==
+            
+            API -> Email : sendBookingConfirmation(booking, user)
+            activate Email
+            
+            Email -> Email : Generate email template
+            Email -> Email : Send email via SMTP
+            
+            Email --> API : Email sent
+            deactivate Email
+            
+            API --> Frontend : 201 Created + booking details
+            deactivate API
+            
+            Frontend --> Guest : Show success message\n+ booking confirmation
+            deactivate Frontend
+            
+            note right of Guest
+              "Booking Confirmed!
+              Confirmation email sent
+              to your email address"
+            end note
+        end
+    end
+end
+
+== Post-Booking ==
+
+Guest -> Frontend : View booking details
+activate Frontend
+
+Frontend -> API : GET /api/bookings/my-bookings
+activate API
+
+API -> Auth : verifyToken(JWT)
+activate Auth
+Auth --> API : User authenticated
+deactivate Auth
+
+API -> BookingCtrl : getMyBookings(userId)
+activate BookingCtrl
+
+BookingCtrl -> DB : find({ userId })
+activate DB
+DB --> BookingCtrl : User's bookings
+deactivate DB
+
+BookingCtrl --> API : bookings[]
+deactivate BookingCtrl
+
+API --> Frontend : 200 OK + bookings
+deactivate API
+
+Frontend --> Guest : Display booking history
+deactivate Frontend
+
+legend right
+  |= Status Code |= Meaning |
+  | 200 OK | Request successful |
+  | 201 Created | Resource created |
+  | 409 Conflict | Resource conflict |
+  | 401 Unauthorized | Auth failed |
+  | 500 Error | Server error |
+  
+  **Security Measures:**
+  - JWT authentication
+  - HTTPS encryption
+  - Input validation
+  - SQL injection prevention
+endlegend
+
+note over Guest, Stripe
+  **Complete Booking Flow:**
+  1. Browse & select room
+  2. Check availability
+  3. Process payment
+  4. Create booking
+  5. Send confirmation
+  6. View booking history
+end note
+
+footer Smart Hotel Management System - Room Booking Sequence Diagram\nKingston University BSc (Hons) - CI6125 Software Development Practice\nDeveloped by: [Your Team Name] | Date: December 2025
+
+@enduml

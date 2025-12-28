@@ -1,0 +1,349 @@
+@startuml Smart_Hotel_ER_Diagram
+
+skinparam backgroundColor white
+skinparam handwritten false
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam linetype ortho
+
+skinparam entity {
+    BackgroundColor LightBlue
+    BorderColor Blue
+    FontSize 11
+    AttributeFontSize 10
+}
+
+skinparam note {
+    BackgroundColor LightYellow
+    BorderColor Orange
+}
+
+title Smart Hotel Management System - Entity Relationship Diagram\n\n
+
+entity "User" as user {
+    * **_id** : ObjectId <<PK>>
+    --
+    * name : String
+    * email : String <<UNIQUE>>
+    * password : String <<HASHED>>
+    * phone : String
+    * role : Enum
+    * isActive : Boolean
+    address : String
+    dateOfBirth : Date
+    nationality : String
+    idType : String
+    idNumber : String
+    preferences : Array
+    department : String
+    accessLevel : String
+    employeeId : String
+    shift : String
+    * createdAt : Date
+    * updatedAt : Date
+}
+
+entity "Room" as room {
+    * **_id** : ObjectId <<PK>>
+    --
+    * name : String
+    * type : Enum
+    * description : Text
+    * price : Number
+    discountPrice : Number
+    * maxOccupancy : Number
+    * size : Number
+    bedType : String
+    * images : Array
+    * amenities : Array
+    floor : Number
+    * roomNumber : String <<UNIQUE>>
+    * status : Enum
+    rating : Number
+    reviews : Number
+    * isAvailable : Boolean
+    * createdAt : Date
+    * updatedAt : Date
+}
+
+entity "Booking" as booking {
+    * **_id** : ObjectId <<PK>>
+    --
+    * userId : ObjectId <<FK>>
+    * roomId : ObjectId <<FK>>
+    * guestName : String
+    * guestEmail : String
+    * guestPhone : String
+    * checkInDate : Date
+    * checkOutDate : Date
+    * numberOfGuests : Number
+    * numberOfNights : Number
+    * roomPrice : Number
+    * totalPrice : Number
+    * status : Enum
+    * paymentStatus : Enum
+    paymentIntentId : String
+    specialRequests : Text
+    * createdAt : Date
+    * updatedAt : Date
+}
+
+entity "Payment" as payment {
+    * **_id** : ObjectId <<PK>>
+    --
+    * bookingId : ObjectId <<FK>>
+    * amount : Number
+    * currency : String
+    * paymentMethod : Enum
+    * paymentIntentId : String <<UNIQUE>>
+    * status : Enum
+    transactionId : String
+    paidAt : Date
+    refundAmount : Number
+    refundStatus : Enum
+    * createdAt : Date
+}
+
+entity "Invoice" as invoice {
+    * **_id** : ObjectId <<PK>>
+    --
+    * bookingId : ObjectId <<FK>>
+    * invoiceNumber : String <<UNIQUE>>
+    * issueDate : Date
+    dueDate : Date
+    * subtotal : Number
+    * tax : Number
+    * total : Number
+    * status : Enum
+    * createdAt : Date
+}
+
+entity "InvoiceItem" as invoiceItem {
+    * **_id** : ObjectId <<PK>>
+    --
+    * invoiceId : ObjectId <<FK>>
+    * description : String
+    * quantity : Number
+    * unitPrice : Number
+    * total : Number
+}
+
+entity "Review" as review {
+    * **_id** : ObjectId <<PK>>
+    --
+    * userId : ObjectId <<FK>>
+    * roomId : ObjectId <<FK>>
+    bookingId : ObjectId <<FK>>
+    * rating : Number
+    comment : Text
+    isVerified : Boolean
+    * createdAt : Date
+    * updatedAt : Date
+}
+
+entity "Notification" as notification {
+    * **_id** : ObjectId <<PK>>
+    --
+    * userId : ObjectId <<FK>>
+    * type : Enum
+    * title : String
+    * message : Text
+    * isRead : Boolean
+    sentAt : Date
+    * channel : Enum
+    * createdAt : Date
+}
+
+entity "Analytics" as analytics {
+    * **_id** : ObjectId <<PK>>
+    --
+    * date : Date
+    * totalBookings : Number
+    * totalRevenue : Number
+    * occupancyRate : Number
+    * averageRoomRate : Number
+    cancelledBookings : Number
+    newGuests : Number
+    returningGuests : Number
+    * createdAt : Date
+}
+
+entity "MaintenanceTicket" as maintenance {
+    * **_id** : ObjectId <<PK>>
+    --
+    * roomId : ObjectId <<FK>>
+    * reportedBy : ObjectId <<FK>>
+    * issueType : Enum
+    * description : Text
+    * priority : Enum
+    * status : Enum
+    assignedTo : ObjectId <<FK>>
+    resolvedAt : Date
+    * createdAt : Date
+    * updatedAt : Date
+}
+
+entity "HousekeepingTask" as housekeeping {
+    * **_id** : ObjectId <<PK>>
+    --
+    * roomId : ObjectId <<FK>>
+    * assignedTo : ObjectId <<FK>>
+    * taskDate : Date
+    * taskType : Enum
+    * status : Enum
+    startTime : DateTime
+    endTime : DateTime
+    notes : Text
+    * createdAt : Date
+    * updatedAt : Date
+}
+
+user ||--o{ booking : "creates"
+note on link
+  One user can have
+  multiple bookings
+end note
+
+room ||--o{ booking : "booked in"
+note on link
+  One room can have
+  multiple bookings
+  (different dates)
+end note
+
+booking ||--|| payment : "has"
+note on link
+  Each booking has
+  exactly one payment
+end note
+
+booking ||--|| invoice : "generates"
+note on link
+  Each booking generates
+  exactly one invoice
+end note
+
+invoice ||--|{ invoiceItem : "contains"
+note on link
+  Invoice contains
+  multiple line items
+end note
+
+user ||--o{ review : "writes"
+room ||--o{ review : "receives"
+booking ||--o| review : "can have"
+
+user ||--o{ notification : "receives"
+note on link
+  Users receive multiple
+  notifications for various
+  events
+end note
+
+room ||--o{ maintenance : "has issues"
+user ||--o{ maintenance : "reports/resolves"
+
+room ||--o{ housekeeping : "requires"
+user ||--o{ housekeeping : "assigned to"
+
+note right of user
+  **User Roles:**
+  - Guest: Books rooms
+  - Admin: Full system access
+  - Receptionist: Check-in/out
+  - Housekeeping: Room maintenance
+  
+  **Security:**
+  - Password hashed with bcrypt
+  - JWT token authentication
+  - Role-based access control
+end note
+
+note right of booking
+  **Booking Status Flow:**
+  Pending → Confirmed → 
+  Checked-In → Checked-Out
+  
+  Can be Cancelled at any stage
+  
+  **Payment Status:**
+  - Pending: Awaiting payment
+  - Paid: Payment successful
+  - Refunded: Cancelled booking
+  - Failed: Payment failed
+end note
+
+note right of payment
+  **Payment Integration:**
+  - Stripe API for processing
+  - Secure PCI DSS compliant
+  - Supports refunds (90%)
+  - Multiple payment methods
+  
+  **Currency:**
+  LKR (Sri Lankan Rupees)
+end note
+
+note left of room
+  **Room Types:**
+  - Standard: LKR 10,000-15,000
+  - Suite: LKR 25,000-35,000
+  - Family: LKR 30,000-40,000
+  - Penthouse: LKR 65,000+
+  
+  **Room Status:**
+  - Available: Ready for booking
+  - Occupied: Guest checked in
+  - Maintenance: Under repair
+  - Cleaning: Being cleaned
+end note
+
+note bottom of invoice
+  **Invoice Components:**
+  - Room charges
+  - Additional services
+  - Taxes (if applicable)
+  - Discounts
+  
+  Generated automatically
+  upon booking confirmation
+end note
+
+legend right
+  |= Symbol |= Meaning |
+  | **PK** | Primary Key |
+  | **FK** | Foreign Key |
+  | * | Required field |
+  | ||--|| | One-to-One |
+  | ||--o{ | One-to-Many |
+  | }o--o{ | Many-to-Many |
+  
+  **Data Types:**
+  - ObjectId: MongoDB unique identifier
+  - String: Text data
+  - Number: Numeric data
+  - Date: Date/DateTime
+  - Boolean: True/False
+  - Enum: Predefined values
+  - Array: List of values
+  - Text: Long text content
+endlegend
+
+note bottom
+  **Database: MongoDB (NoSQL)**
+  - Flexible schema design
+  - Scalable for large datasets
+  - Fast read/write operations
+  - Cloud-hosted on MongoDB Atlas
+  
+  **Indexes:**
+  - User.email (unique)
+  - Room.roomNumber (unique)
+  - Booking.userId + checkInDate
+  - Payment.paymentIntentId (unique)
+  - Invoice.invoiceNumber (unique)
+end note
+
+footer Smart Hotel Management System - Entity Relationship Diagram\nKingston University BSc (Hons) - CI6125 Software Development Practice\nDeveloped by: [Your Team Name] | Date: December 2025
+
+@enduml

@@ -1,0 +1,196 @@
+@startuml Smart_Hotel_Management_System_Use_Case_Diagram
+
+skinparam backgroundColor white
+skinparam handwritten false
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+
+skinparam actor {
+    BackgroundColor LightBlue
+    BorderColor Blue
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor white
+    BorderColor Blue
+    BorderThickness 2
+    FontSize 10
+    ArrowColor Blue
+}
+
+skinparam package {
+    BackgroundColor WhiteSmoke
+    BorderColor Gray
+    BorderThickness 2
+    FontSize 13
+    FontStyle bold
+}
+
+title Smart Hotel Management System - Use Case Diagram\n\n
+
+left to right direction
+
+actor "Guest\n(Customer)" as Guest
+actor "Receptionist\n(Front Desk)" as Receptionist
+actor "Admin\n(Manager)" as Admin
+actor "Housekeeping\n(Staff)" as Housekeeping
+
+package "Smart Hotel Management System" {
+    
+    package "Guest Services" {
+        usecase "Register Account" as UC1
+        usecase "Login to System" as UC2
+        usecase "Search Available\nRooms" as UC3
+        usecase "View Room Details" as UC4
+        usecase "Book Room" as UC5
+        usecase "Make Payment" as UC6
+        usecase "View Booking\nHistory" as UC7
+        usecase "Cancel Booking" as UC8
+        usecase "Request Refund" as UC9
+        usecase "Download Invoice" as UC10
+        usecase "Update Profile" as UC11
+    }
+    
+    package "Reception Management" {
+        usecase "Check-in Guest" as UC12
+        usecase "Check-out Guest" as UC13
+        usecase "Assign Room" as UC14
+        usecase "Handle Guest\nRequests" as UC15
+        usecase "Process Walk-in\nBooking" as UC16
+    }
+    
+    package "Administration" {
+        usecase "Manage Rooms" as UC17
+        usecase "Add New Room" as UC18
+        usecase "Update Room\nDetails" as UC19
+        usecase "Delete Room" as UC20
+        usecase "Manage Bookings" as UC21
+        usecase "View All Bookings" as UC22
+        usecase "Update Booking\nStatus" as UC23
+        usecase "Manage Users" as UC24
+        usecase "View Reports &\nAnalytics" as UC25
+        usecase "Generate Revenue\nReport" as UC26
+        usecase "Monitor Occupancy" as UC27
+    }
+    
+    package "Housekeeping Services" {
+        usecase "View Assigned\nRooms" as UC28
+        usecase "Update Room\nStatus" as UC29
+        usecase "Mark Room as\nCleaned" as UC30
+        usecase "Report\nMaintenance Issue" as UC31
+    }
+    
+    package "System Functions" {
+        usecase "Send Email\nNotification" as UC32
+        usecase "Process Secure\nPayment" as UC33
+        usecase "Validate User\nCredentials" as UC34
+        usecase "Generate Invoice" as UC35
+    }
+}
+
+actor "Payment Gateway\n(Stripe)" as PaymentGateway
+actor "Email Service\n(SMTP)" as EmailService
+
+Guest --> UC1
+Guest --> UC2
+Guest --> UC3
+Guest --> UC4
+Guest --> UC5
+Guest --> UC6
+Guest --> UC7
+Guest --> UC8
+Guest --> UC9
+Guest --> UC10
+Guest --> UC11
+
+Receptionist --> UC12
+Receptionist --> UC13
+Receptionist --> UC14
+Receptionist --> UC15
+Receptionist --> UC16
+Receptionist --> UC2
+
+Admin --> UC17
+Admin --> UC21
+Admin --> UC24
+Admin --> UC25
+Admin --> UC2
+
+Housekeeping --> UC28
+Housekeeping --> UC29
+Housekeeping --> UC30
+Housekeeping --> UC31
+Housekeeping --> UC2
+
+UC1 ..> UC34 : <<include>>
+UC2 ..> UC34 : <<include>>
+UC5 ..> UC6 : <<include>>
+UC6 ..> UC33 : <<include>>
+UC5 ..> UC35 : <<include>>
+UC8 ..> UC9 : <<include>>
+
+UC3 ..> UC4 : <<extend>>
+UC7 ..> UC10 : <<extend>>
+UC12 ..> UC14 : <<extend>>
+
+UC17 .up.|> UC18 : <<extend>>
+UC17 .up.|> UC19 : <<extend>>
+UC17 .up.|> UC20 : <<extend>>
+
+UC21 .up.|> UC22 : <<extend>>
+UC21 .up.|> UC23 : <<extend>>
+
+UC25 .up.|> UC26 : <<extend>>
+UC25 .up.|> UC27 : <<extend>>
+
+UC28 .up.|> UC29 : <<extend>>
+UC29 .up.|> UC30 : <<extend>>
+
+UC33 --> PaymentGateway : <<uses>>
+UC32 --> EmailService : <<uses>>
+UC6 ..> UC32 : <<include>>
+UC8 ..> UC32 : <<include>>
+
+note right of Guest
+  Primary user who books
+  rooms and uses hotel
+  services
+end note
+
+note right of Admin
+  Has full control over
+  system configuration
+  and monitoring
+end note
+
+note bottom of UC33
+  Secure payment processing
+  with encryption and
+  PCI DSS compliance
+end note
+
+note bottom of UC34
+  JWT-based authentication
+  with bcrypt password
+  hashing
+end note
+
+legend right
+  |= Symbol |= Meaning |
+  | <<include>> | Mandatory relationship |
+  | <<extend>> | Optional relationship |
+  | <<uses>> | External dependency |
+  
+  **System Actors:**
+  - Guest: End users booking rooms
+  - Receptionist: Front desk staff
+  - Admin: System administrators
+  - Housekeeping: Cleaning staff
+endlegend
+
+footer Smart Hotel Management System - Kingston University BSc (Hons) - CI6125\nDeveloped by: [Your Team Name] | Date: December 2025
+
+@enduml

@@ -1,0 +1,351 @@
+@startuml Smart_Hotel_Management_System_Class_Diagram
+
+skinparam backgroundColor white
+skinparam handwritten false
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam linetype ortho
+
+skinparam class {
+    BackgroundColor white
+    BorderColor Blue
+    BorderThickness 2
+    ArrowColor Blue
+    FontSize 11
+    AttributeFontSize 10
+    StereotypeFontSize 10
+}
+
+skinparam note {
+    BackgroundColor LightYellow
+    BorderColor Orange
+}
+
+title Smart Hotel Management System - Class Diagram\n\n
+
+abstract class User {
+    - _id : ObjectId
+    - name : String
+    - email : String
+    - password : String
+    - phone : String
+    - role : String
+    - isActive : Boolean
+    - createdAt : Date
+    - updatedAt : Date
+    __
+    + register() : User
+    + login() : Token
+    + updateProfile() : User
+    + changePassword() : Boolean
+    + resetPassword() : Boolean
+    + validateCredentials() : Boolean
+    # hashPassword() : String
+    # generateToken() : String
+}
+
+class Guest {
+    - address : String
+    - dateOfBirth : Date
+    - nationality : String
+    - idType : String
+    - idNumber : String
+    - preferences : Array
+    __
+    + searchRooms(criteria) : Room[]
+    + viewRoomDetails(roomId) : Room
+    + createBooking(roomId, dates) : Booking
+    + viewBookingHistory() : Booking[]
+    + cancelBooking(bookingId) : Boolean
+    + downloadInvoice(bookingId) : Invoice
+    + updatePreferences() : Boolean
+}
+
+class Admin {
+    - department : String
+    - accessLevel : String
+    - employeeId : String
+    __
+    + manageRooms() : Room[]
+    + addRoom(roomData) : Room
+    + updateRoom(roomId, data) : Room
+    + deleteRoom(roomId) : Boolean
+    + viewAllBookings() : Booking[]
+    + updateBookingStatus(bookingId, status) : Booking
+    + manageUsers() : User[]
+    + generateReports() : Report
+    + viewAnalytics() : Analytics
+    + monitorOccupancy() : Statistics
+}
+
+class Receptionist {
+    - shift : String
+    - desk : String
+    - employeeId : String
+    __
+    + checkInGuest(bookingId) : Boolean
+    + checkOutGuest(bookingId) : Boolean
+    + assignRoom(bookingId, roomId) : Boolean
+    + handleGuestRequest(request) : Boolean
+    + processWalkInBooking(data) : Booking
+    + viewTodayCheckIns() : Booking[]
+    + viewTodayCheckOuts() : Booking[]
+}
+
+class Housekeeping {
+    - shift : String
+    - area : String
+    - employeeId : String
+    __
+    + viewAssignedRooms() : Room[]
+    + updateRoomStatus(roomId, status) : Boolean
+    + markRoomCleaned(roomId) : Boolean
+    + reportMaintenanceIssue(roomId, issue) : Ticket
+    + viewDailyTasks() : Task[]
+}
+
+class Room {
+    - _id : ObjectId
+    - name : String
+    - type : String
+    - description : String
+    - price : Number
+    - discountPrice : Number
+    - maxOccupancy : Number
+    - size : Number
+    - bedType : String
+    - images : String[]
+    - amenities : String[]
+    - floor : Number
+    - roomNumber : String
+    - status : String
+    - rating : Number
+    - reviews : Number
+    - isAvailable : Boolean
+    - createdAt : Date
+    - updatedAt : Date
+    __
+    + checkAvailability(dates) : Boolean
+    + calculatePrice(nights, guests) : Number
+    + applyDiscount() : Number
+    + updateStatus(status) : Boolean
+    + addReview(rating, comment) : Boolean
+    + getAverageRating() : Number
+    + isMaintenanceRequired() : Boolean
+}
+
+class Booking {
+    - _id : ObjectId
+    - userId : ObjectId
+    - roomId : ObjectId
+    - guestName : String
+    - guestEmail : String
+    - guestPhone : String
+    - checkInDate : Date
+    - checkOutDate : Date
+    - numberOfGuests : Number
+    - numberOfNights : Number
+    - roomPrice : Number
+    - totalPrice : Number
+    - status : String
+    - paymentStatus : String
+    - paymentIntentId : String
+    - specialRequests : String
+    - createdAt : Date
+    - updatedAt : Date
+    __
+    + calculateTotalPrice() : Number
+    + calculateNights() : Number
+    + validateDates() : Boolean
+    + checkRoomAvailability() : Boolean
+    + confirmBooking() : Boolean
+    + cancelBooking() : Boolean
+    + updateStatus(status) : Boolean
+    + generateInvoice() : Invoice
+    + sendConfirmationEmail() : Boolean
+}
+
+class Payment {
+    - _id : ObjectId
+    - bookingId : ObjectId
+    - amount : Number
+    - currency : String
+    - paymentMethod : String
+    - paymentIntentId : String
+    - status : String
+    - transactionId : String
+    - paidAt : Date
+    - refundAmount : Number
+    - refundStatus : String
+    - createdAt : Date
+    __
+    + processPayment() : Boolean
+    + verifyPayment() : Boolean
+    + initiateRefund(amount) : Boolean
+    + getPaymentDetails() : Object
+    + updatePaymentStatus(status) : Boolean
+    + generateReceipt() : Receipt
+}
+
+class Invoice {
+    - _id : ObjectId
+    - bookingId : ObjectId
+    - invoiceNumber : String
+    - issueDate : Date
+    - dueDate : Date
+    - items : InvoiceItem[]
+    - subtotal : Number
+    - tax : Number
+    - total : Number
+    - status : String
+    __
+    + generateInvoiceNumber() : String
+    + calculateSubtotal() : Number
+    + calculateTax() : Number
+    + calculateTotal() : Number
+    + markAsPaid() : Boolean
+    + sendToEmail(email) : Boolean
+    + downloadPDF() : File
+}
+
+class InvoiceItem {
+    - description : String
+    - quantity : Number
+    - unitPrice : Number
+    - total : Number
+    __
+    + calculateTotal() : Number
+}
+
+class Review {
+    - _id : ObjectId
+    - userId : ObjectId
+    - roomId : ObjectId
+    - bookingId : ObjectId
+    - rating : Number
+    - comment : String
+    - isVerified : Boolean
+    - createdAt : Date
+    __
+    + submitReview() : Boolean
+    + updateReview() : Boolean
+    + deleteReview() : Boolean
+    + verifyReview() : Boolean
+}
+
+class Notification {
+    - _id : ObjectId
+    - userId : ObjectId
+    - type : String
+    - title : String
+    - message : String
+    - isRead : Boolean
+    - sentAt : Date
+    - channel : String
+    __
+    + sendEmail() : Boolean
+    + sendSMS() : Boolean
+    + sendPushNotification() : Boolean
+    + markAsRead() : Boolean
+}
+
+class Analytics {
+    - _id : ObjectId
+    - date : Date
+    - totalBookings : Number
+    - totalRevenue : Number
+    - occupancyRate : Number
+    - averageRoomRate : Number
+    - cancelledBookings : Number
+    __
+    + calculateOccupancy() : Number
+    + calculateRevenue() : Number
+    + generateDailyReport() : Report
+    + generateMonthlyReport() : Report
+    + getTopRooms() : Room[]
+}
+
+User <|-- Guest
+User <|-- Admin
+User <|-- Receptionist
+User <|-- Housekeeping
+
+Guest "1" -- "0..*" Booking : creates
+Admin "1" -- "0..*" Room : manages
+Receptionist "1" -- "0..*" Booking : handles
+Housekeeping "1" -- "0..*" Room : maintains
+
+Room "1" -- "0..*" Booking : booked in
+Booking "1" -- "1" Payment : has
+Booking "1" -- "1" Invoice : generates
+Invoice "1" *-- "1..*" InvoiceItem : contains
+
+User "1" -- "0..*" Review : writes
+Room "1" -- "0..*" Review : receives
+Booking "1" -- "0..1" Review : can have
+
+User "1" -- "0..*" Notification : receives
+
+Booking "1" *-- "1" Payment : composed of
+Room "1" o-- "0..*" Booking : aggregates
+
+Booking ..> Room : <<uses>>
+Payment ..> Booking : <<depends on>>
+Invoice ..> Booking : <<depends on>>
+Notification ..> User : <<notifies>>
+Analytics ..> Booking : <<analyzes>>
+
+note right of User
+  **Abstract Base Class**
+  All user types inherit from
+  this class. Password is hashed
+  using bcrypt before storage.
+  JWT tokens used for auth.
+end note
+
+note right of Booking
+  **Core Business Entity**
+  Manages room reservations
+  with status tracking:
+  - Pending
+  - Confirmed
+  - Checked-In
+  - Checked-Out
+  - Cancelled
+end note
+
+note bottom of Payment
+  **Secure Payment Processing**
+  Integrates with Stripe API
+  for payment processing.
+  Supports refunds with
+  90% refund policy.
+end note
+
+note left of Room
+  **Room Status:**
+  - Available
+  - Occupied
+  - Maintenance
+  - Cleaning
+  - Reserved
+end note
+
+legend right
+  |= Relationship |= Symbol |
+  | Inheritance | <|-- |
+  | Association | -- |
+  | Composition | *-- |
+  | Aggregation | o-- |
+  | Dependency | ..> |
+  
+  **Multiplicity:**
+  1 = Exactly one
+  0..* = Zero or more
+  1..* = One or more
+  0..1 = Zero or one
+endlegend
+
+footer Smart Hotel Management System - Class Diagram\nKingston University BSc (Hons) - CI6125 Software Development Practice\nDeveloped by: [Your Team Name] | Date: December 2025
+
+@enduml
