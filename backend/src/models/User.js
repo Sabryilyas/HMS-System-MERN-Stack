@@ -27,8 +27,16 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['guest', 'receptionist', 'housekeeping', 'admin'],
+        enum: ['guest', 'staff', 'admin'],
         default: 'guest'
+    },
+    // Staff specific fields
+    hotelId: {
+        type: String
+    },
+    taskType: {
+        type: String,
+        enum: ['housekeeping', 'room_service', 'maintenance', 'other']
     },
     phone: {
         type: String,

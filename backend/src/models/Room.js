@@ -15,6 +15,15 @@ const roomSchema = new mongoose.Schema({
             message: 'Please select a valid room type'
         }
     },
+    branch: {
+        type: String,
+        required: false,
+        enum: {
+            values: ['Colombo', 'Kandy', 'Jaffna', 'Vavuniya', 'Galle'],
+            message: 'Please select a valid branch location'
+        },
+        default: 'Colombo'
+    },
     price: {
         type: Number,
         required: [true, 'Please provide a price per night'],

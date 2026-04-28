@@ -31,9 +31,11 @@ const Footer = () => {
             {/* Brand */}
             <div className="md:col-span-2">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-lg">H</span>
-                </div>
+                <img
+                  src="/hotelhub-logo.png"
+                  alt="HotelHub"
+                  className="w-10 h-10 rounded-xl shadow-lg"
+                />
                 <div>
                   <span className="text-2xl font-bold text-white">HotelHub</span>
                   <p className="text-xs text-blue-300">Premium Luxury Stays</p>
@@ -42,7 +44,7 @@ const Footer = () => {
               <p className="text-sm text-slate-400 mb-6 leading-relaxed">
                 Your trusted platform for discovering world-class luxury accommodations. Experience hospitality like never before with HotelHub.
               </p>
-              
+
               {/* Newsletter */}
               <form onSubmit={handleSubscribe} className="space-y-2">
                 <p className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-3">Subscribe for Deals</p>

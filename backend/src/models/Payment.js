@@ -30,7 +30,7 @@ const paymentSchema = new mongoose.Schema({
     },
     stripePaymentIntentId: {
         type: String,
-        required: true
+        required: false
     },
     stripeClientSecret: {
         type: String

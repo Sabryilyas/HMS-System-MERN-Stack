@@ -1,8 +1,11 @@
 export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount)
+  if (!amount && amount !== 0) return "0 LKR";
+  return `${Math.round(amount).toLocaleString('en-US')} LKR`;
+}
+
+export const formatCurrencyShort = (amount) => {
+  if (!amount && amount !== 0) return "LKR 0";
+  return `LKR ${Math.round(amount).toLocaleString('en-US')}`;
 }
 
 export const formatPhoneNumber = (phone) => {

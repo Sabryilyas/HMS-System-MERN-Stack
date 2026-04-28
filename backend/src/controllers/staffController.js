@@ -1,44 +1,17 @@
-import StaffTask from '../models/StaffTask.js';
+import ServiceRequest from '../models/ServiceRequest.js';
 import User from '../models/User.js';
 
 /**
- * @desc    Create a new task for staff
- * @route   POST /api/staff/tasks
- * @access  Private (Admin/Manager)
- */
-export const createTask = async (req, res, next) => {
-    try {
-        const { title, description, assignedTo, priority, dueDate } = req.body;
-
-        const task = await StaffTask.create({
-            title,
-            description,
-            assignedTo,
-            assignedBy: req.user.id,
-            priority,
-            dueDate,
-            status: 'pending'
-        });
-
-        res.status(201).json({
-            success: true,
-            data: task
-        });
-    } catch (err) {
-        next(err);
-    }
-};
-
-/**
- * @desc    Get my tasks
- * @route   GET /api/staff/tasks/my
+ * @desc    Get my assigned tasks (Service Requests)
+ * @route   GET /api/staff/tasks
  * @access  Private (Staff)
  */
 export const getMyTasks = async (req, res, next) => {
     try {
-        const tasks = await StaffTask.find({ assignedTo: req.user.id })
-            .populate('assignedBy', 'name')
-            .sort('dueDate -createdAt');
+        const tasks = await ServiceRequest.find({ assignedTo: req.user.id })
+            .populate('user', 'name') // Guest info
+            .populate('room', 'name')
+            .sort('-createdAt');
 
         res.status(200).json({
             success: true,
@@ -53,12 +26,12 @@ export const getMyTasks = async (req, res, next) => {
 /**
  * @desc    Update task status
  * @route   PUT /api/staff/tasks/:id
- * @access  Private (Staff/Admin)
+ * @access  Private (Staff)
  */
 export const updateTaskStatus = async (req, res, next) => {
     try {
         const { status } = req.body;
-        let task = await StaffTask.findById(req.params.id);
+        let task = await ServiceRequest.findById(req.params.id);
 
         if (!task) {
             return res.status(404).json({
@@ -67,7 +40,7 @@ export const updateTaskStatus = async (req, res, next) => {
             });
         }
 
-        // Verify ownership or admin
+        // Verify assignment
         if (task.assignedTo.toString() !== req.user.id && req.user.role !== 'admin') {
             return res.status(403).json({
                 success: false,
@@ -76,10 +49,11 @@ export const updateTaskStatus = async (req, res, next) => {
         }
 
         task.status = status;
-        if (status === 'completed') {
-            task.completedAt = Date.now();
-        }
         await task.save();
+
+        if (status === 'completed') {
+            console.log(`[AUDIT] Task Completed: Task ${task._id} by Staff ${req.user.email} at ${new Date().toISOString()}`);
+        }
 
         res.status(200).json({
             success: true,
@@ -91,16 +65,13 @@ export const updateTaskStatus = async (req, res, next) => {
 };
 
 /**
- * @desc    Get all staff members
- * @route   GET /api/staff/members
+ * @desc    Get all staff members (Admin)
+ * @route   GET /api/admin/staff (This is handled by adminController now, but keeping for compatibility if routes point here)
  * @access  Private (Admin)
  */
 export const getAllStaff = async (req, res, next) => {
     try {
-        const staff = await User.find({
-            role: { $in: ['receptionist', 'housekeeping', 'maintenance', 'manager'] }
-        }).select('-password');
-
+        const staff = await User.find({ role: 'staff' }).sort('-createdAt');
         res.status(200).json({
             success: true,
             count: staff.length,

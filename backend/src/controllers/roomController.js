@@ -1,4 +1,5 @@
 import Room from '../models/Room.js';
+import Booking from '../models/Booking.js';
 
 /**
  * @desc    Get all rooms with filtering, sorting and pagination
@@ -9,8 +10,49 @@ export const getAllRooms = async (req, res, next) => {
     try {
         // 1. Filtering
         const queryObj = { ...req.query };
-        const excludedFields = ['page', 'sort', 'limit', 'fields'];
+        const excludedFields = ['page', 'sort', 'limit', 'fields', 'checkIn', 'checkOut'];
         excludedFields.forEach(el => delete queryObj[el]);
+
+        // Date overlap filtering OR General Availability exclusion
+        let roomIdsToExclude = [];
+
+        // 1. If dates are provided, exclude conflicting bookings
+        if (req.query.checkIn && req.query.checkOut) {
+            const checkIn = new Date(req.query.checkIn);
+            const checkOut = new Date(req.query.checkOut);
+
+            const conflictingBookings = await Booking.find({
+                status: { $in: ['confirmed', 'checked-in', 'pending'] },
+                $or: [
+                    {
+                        checkInDate: { $lt: checkOut },
+                        checkOutDate: { $gt: checkIn }
+                    }
+                ]
+            }).select('room');
+
+            roomIdsToExclude = conflictingBookings.map(b => b.room);
+        } else {
+            // 2. If no dates are provided, exclude rooms that are CURRENTLY occupied or booked for today
+            const today = new Date();
+            const tonight = new Date();
+            tonight.setHours(23, 59, 59, 999);
+
+            const currentBookings = await Booking.find({
+                status: { $in: ['confirmed', 'checked-in'] },
+                checkInDate: { $lte: tonight },
+                checkOutDate: { $gte: today }
+            }).select('room');
+
+            roomIdsToExclude = currentBookings.map(b => b.room);
+
+            // Also exclude rooms marked as 'occupied' or 'maintenance' in the Room model itself
+            queryObj.status = { $nin: ['occupied', 'maintenance'] };
+        }
+
+        if (roomIdsToExclude.length > 0) {
+            queryObj._id = { $nin: roomIdsToExclude };
+        }
 
         // Advanced filtering (gt, gte, lt, lte)
         let queryStr = JSON.stringify(queryObj);

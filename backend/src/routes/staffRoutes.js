@@ -1,22 +1,17 @@
 import express from 'express';
 import {
-    createTask,
     getMyTasks,
-    updateTaskStatus,
-    getAllStaff
+    updateTaskStatus
 } from '../controllers/staffController.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.use(protect);
+// Allow only matching roles
+router.use(authorize('staff', 'admin'));
 
-// Task routes
-router.get('/tasks/my', getMyTasks);
+router.get('/tasks', getMyTasks);
 router.put('/tasks/:id', updateTaskStatus);
-
-// Admin/Manager routes
-router.post('/tasks', authorize('admin', 'manager'), createTask);
-router.get('/members', authorize('admin', 'manager'), getAllStaff);
 
 export default router;

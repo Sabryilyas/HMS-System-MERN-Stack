@@ -35,3 +35,27 @@ export const updateBookingStatus = async (id, status) => {
   const response = await api.put(`/bookings/${id}`, { status });
   return response.data.data;
 };
+
+// Check-in guest (Admin/Staff)
+export const checkInBooking = async (id) => {
+  const response = await api.put(`/bookings/${id}/checkin`);
+  return response.data;
+};
+
+// Check-out guest (Admin/Staff)
+export const checkOutBooking = async (id) => {
+  const response = await api.put(`/bookings/${id}/checkout`);
+  return response.data;
+};
+
+// Get booking bill details
+export const getBookingBill = async (id) => {
+  const response = await api.get(`/bookings/${id}/bill`);
+  return response.data.data;
+};
+
+// Process payment for booking (Admin/Staff)
+export const processPayment = async (id, paymentMethod = 'cash') => {
+  const response = await api.put(`/bookings/${id}/payment`, { paymentMethod });
+  return response.data;
+};

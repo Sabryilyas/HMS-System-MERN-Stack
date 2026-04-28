@@ -12,7 +12,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount }) => {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl transform transition-all animate-slide-up overflow-hidden">
-        
+
         {/* Header with Gradient Accent */}
         <div className="px-8 pt-8 pb-6 border-b border-slate-100">
           <div className="flex justify-between items-start mb-6">
@@ -20,8 +20,8 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount }) => {
               <h2 className="text-2xl font-semibold text-slate-900">Checkout</h2>
               <p className="text-sm text-slate-500 mt-1">Complete your booking</p>
             </div>
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="text-slate-400 hover:text-slate-600 transition p-2 -mr-2"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +33,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount }) => {
           {/* Amount Display - Premium */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-200">
             <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Total Due</p>
-            <p className="text-4xl font-bold text-blue-900 mt-2">${(amount / 100).toFixed(2)}</p>
+            <p className="text-4xl font-bold text-blue-900 mt-2">{Math.round(amount).toLocaleString()} <span className="text-sm font-normal">LKR</span></p>
             <p className="text-xs text-blue-600 mt-2">Secure payment powered by Stripe</p>
           </div>
         </div>

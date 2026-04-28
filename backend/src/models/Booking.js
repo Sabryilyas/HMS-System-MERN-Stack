@@ -49,12 +49,46 @@ const bookingSchema = new mongoose.Schema({
     paymentIntentId: {
         type: String
     },
+    paymentLast4: {
+        type: String
+    },
     guestDetails: {
         firstName: String,
         lastName: String,
         email: String,
         phone: String,
         specialRequests: String
+    },
+    // Actual check-in/check-out timestamps (recorded by staff)
+    actualCheckInTime: {
+        type: Date,
+        default: null
+    },
+    actualCheckOutTime: {
+        type: Date,
+        default: null
+    },
+    // Total service charges accumulated during stay
+    serviceCharges: {
+        type: Number,
+        default: 0
+    },
+    // Final calculated tax amount (10%)
+    taxAmount: {
+        type: Number,
+        default: 0
+    },
+    // Final total amount (Room + Services + Tax)
+    totalAmount: {
+        type: Number,
+        default: 0
+    },
+    // Final bill generated at checkout
+    finalBill: {
+        roomCharges: { type: Number, default: 0 },
+        serviceCharges: { type: Number, default: 0 },
+        totalAmount: { type: Number, default: 0 },
+        generatedAt: { type: Date, default: null }
     },
     createdAt: {
         type: Date,

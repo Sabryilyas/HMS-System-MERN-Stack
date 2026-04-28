@@ -3,31 +3,34 @@ import mongoose from 'mongoose';
 const serviceRequestSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        ref: 'User'
     },
     room: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Room',
-        required: true
+        ref: 'Room'
     },
     booking: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Booking',
-        required: true
+        ref: 'Booking'
     },
     type: {
         type: String,
-        enum: ['housekeeping', 'maintenance', 'room_service', 'amenities', 'other'],
+        enum: ['food', 'laundry', 'cleaning', 'room_service', 'housekeeping', 'maintenance', 'amenities', 'other'],
         required: true
     },
     description: {
         type: String,
         required: true
     },
+    // Price for this service (for billing purposes)
+    price: {
+        type: Number,
+        default: 0,
+        min: [0, 'Price cannot be negative']
+    },
     status: {
         type: String,
-        enum: ['pending', 'in_progress', 'completed', 'cancelled'],
+        enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'],
         default: 'pending'
     },
     priority: {

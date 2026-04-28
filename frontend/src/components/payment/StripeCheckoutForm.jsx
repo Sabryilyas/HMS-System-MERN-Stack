@@ -43,7 +43,7 @@ const StripeCheckoutForm = ({ onSuccess, amount }) => {
           },
           body: JSON.stringify({
             amount: Math.round(amount),
-            currency: 'usd',
+            currency: 'lkr',
           }),
         });
 
@@ -135,7 +135,7 @@ const StripeCheckoutForm = ({ onSuccess, amount }) => {
             Processing...
           </span>
         ) : (
-          `Pay $${(amount / 100).toFixed(2)}`
+          `Pay ${Math.round(amount).toLocaleString()} LKR`
         )}
       </button>
     </form>

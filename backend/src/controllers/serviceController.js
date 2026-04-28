@@ -1,5 +1,8 @@
 import ServiceRequest from '../models/ServiceRequest.js';
 import Booking from '../models/Booking.js';
+import User from '../models/User.js';
+import Room from '../models/Room.js';
+import { createNotification } from './notificationController.js';
 
 /**
  * @desc    Create a new service request
@@ -8,7 +11,7 @@ import Booking from '../models/Booking.js';
  */
 export const createServiceRequest = async (req, res, next) => {
     try {
-        const { type, description, priority } = req.body;
+        const { type, description, priority, price } = req.body;
 
         // Find active booking for user
         const booking = await Booking.findOne({
@@ -23,15 +26,47 @@ export const createServiceRequest = async (req, res, next) => {
             });
         }
 
+        // Auto-assign logic
+        let assignedTo = null;
+        const room = await Room.findById(booking.room);
+
+        if (room && room.branch) {
+            // Find staff with matching hotelId (branch) and taskType
+            const staff = await User.findOne({
+                role: 'staff',
+                hotelId: room.branch,
+                taskType: type
+            });
+
+            if (staff) {
+                assignedTo = staff._id;
+            }
+        }
+
         const serviceRequest = await ServiceRequest.create({
             user: req.user.id,
             room: booking.room,
             booking: booking._id,
             type,
             description,
+            price: price || 0,
             priority: priority || 'medium',
-            status: 'pending'
+            status: 'pending',
+            assignedTo // Auto-assigned staff ID
         });
+
+
+
+        // Populate user and room for the socket event
+        const populatedRequest = await ServiceRequest.findById(serviceRequest._id)
+            .populate('user', 'name email')
+            .populate('room', 'name')
+            .populate('assignedTo', 'name');
+
+        // Emit real-time event to admins
+        if (req.io) {
+            req.io.emit('service_created', populatedRequest);
+        }
 
         res.status(201).json({
             success: true,
@@ -49,7 +84,24 @@ export const createServiceRequest = async (req, res, next) => {
  */
 export const getMyServiceRequests = async (req, res, next) => {
     try {
-        const requests = await ServiceRequest.find({ user: req.user.id })
+        const { bookingId } = req.query;
+        let query = { user: req.user.id };
+
+        // If bookingId is provided, filter strictly by it
+        if (bookingId) {
+            query.booking = bookingId;
+        } else {
+            // Default to current active booking if no ID provided
+            const activeBooking = await Booking.findOne({
+                user: req.user.id,
+                status: 'checked-in'
+            });
+            if (activeBooking) {
+                query.booking = activeBooking._id;
+            }
+        }
+
+        const requests = await ServiceRequest.find(query)
             .sort('-createdAt');
 
         res.status(200).json({
@@ -105,6 +157,22 @@ export const updateServiceRequest = async (req, res, next) => {
             new: true,
             runValidators: true
         });
+
+        // Emit real-time event to everyone (Admins & Specific User)
+        if (req.io) {
+            req.io.emit('service_updated', request);
+        }
+
+        // Create notification for the user
+        if (req.body.status) {
+            await createNotification(
+                request.user,
+                'Service Request Update',
+                `Your ${request.type} request status is now: ${req.body.status}`,
+                'info',
+                '/user'
+            );
+        }
 
         res.status(200).json({
             success: true,

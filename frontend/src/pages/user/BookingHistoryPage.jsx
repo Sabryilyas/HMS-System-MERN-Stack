@@ -104,7 +104,7 @@ const BookingCard = ({ booking, index, onViewInvoice, onCancelBooking }) => {
       <div className="grid grid-cols-3 gap-4 mb-6 pb-6 border-b border-slate-200">
         <div>
           <p className="text-xs text-slate-500 mb-1">Total Amount</p>
-          <p className="text-2xl font-bold text-slate-900">${booking.totalPrice?.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-slate-900">{Math.round(booking.totalPrice || 0).toLocaleString('en-US')} LKR</p>
         </div>
         <div className="text-center">
           <p className="text-xs text-slate-500 mb-1">Guests</p>
@@ -112,7 +112,7 @@ const BookingCard = ({ booking, index, onViewInvoice, onCancelBooking }) => {
         </div>
         <div className="text-right">
           <p className="text-xs text-slate-500 mb-1">Per Night</p>
-          <p className="text-2xl font-bold text-slate-900">${(booking.totalPrice / nights).toFixed(2)}</p>
+          <p className="text-2xl font-bold text-slate-900">{Math.round((booking.totalPrice / nights) || 0).toLocaleString('en-US')} LKR</p>
         </div>
       </div>
 
@@ -273,7 +273,7 @@ const BookingHistoryPage = () => {
               <p className="text-xs text-slate-600 mt-1">Upcoming</p>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 text-center">
-              <p className="text-2xl font-bold text-green-600">${totalSpent.toFixed(0)}</p>
+              <p className="text-2xl font-bold text-green-600">{Math.round(totalSpent).toLocaleString('en-US')} LKR</p>
               <p className="text-xs text-slate-600 mt-1">Total Spent</p>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 text-center">

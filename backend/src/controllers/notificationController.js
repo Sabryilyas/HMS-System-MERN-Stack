@@ -1,4 +1,5 @@
 import Notification from '../models/Notification.js';
+import { io } from '../../server.js';
 
 /**
  * @desc    Get my notifications
@@ -87,13 +88,18 @@ export const markAllAsRead = async (req, res, next) => {
 // Helper to create notification (internal use)
 export const createNotification = async (recipientId, title, message, type = 'info', link = null) => {
     try {
-        await Notification.create({
+        const notification = await Notification.create({
             recipient: recipientId,
             title,
             message,
             type,
             link
         });
+
+        // Emit real-time notification to the specific user
+        if (io) {
+            io.to(recipientId.toString()).emit('new_notification', notification);
+        }
     } catch (err) {
         console.error('Failed to create notification:', err);
     }

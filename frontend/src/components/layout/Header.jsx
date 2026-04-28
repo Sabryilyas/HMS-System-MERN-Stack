@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import Button from "../common/Button"
+import { useSocket } from "../../context/SocketContext"
+import * as notificationService from "../../services/notificationService"
 
 const Header = () => {
   const { user, logout, isAuthenticated, isAdmin } = useAuth()
@@ -13,6 +15,68 @@ const Header = () => {
   const [scrollY, setScrollY] = useState(0)
   const [showSosMenu, setShowSosMenu] = useState(false)
   const [sosClicked, setSosClicked] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const socket = useSocket()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications()
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!socket || !isAuthenticated) return
+
+    socket.on('new_notification', (notification) => {
+      setNotifications(prev => [notification, ...prev])
+      setUnreadCount(prev => prev + 1)
+
+      // Visual feedback: brief pulse or toast could go here
+      console.log('🔔 New Notification Received:', notification.title)
+    })
+
+    return () => {
+      socket.off('new_notification')
+    }
+  }, [socket, isAuthenticated])
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await notificationService.getMyNotifications()
+      setNotifications(data.data || [])
+      setUnreadCount(data.unreadCount || 0)
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error)
+    }
+  }
+
+  const markAllRead = async () => {
+    try {
+      await notificationService.markAllAsRead()
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnreadCount(0)
+    } catch (error) {
+      console.error("Failed to mark all read:", error)
+    }
+  }
+
+  const handleNotificationClick = async (n) => {
+    if (!n.isRead) {
+      try {
+        await notificationService.markAsRead(n._id)
+        setNotifications(prev => prev.map(notif => notif._id === n._id ? { ...notif, isRead: true } : notif))
+        setUnreadCount(prev => Math.max(0, prev - 1))
+      } catch (err) {
+        console.error("Failed to mark read:", err)
+      }
+    }
+    if (n.link) {
+      navigate(n.link)
+      setShowNotifications(false)
+    }
+  }
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
@@ -55,24 +119,22 @@ const Header = () => {
 
   return (
     <>
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${
-        isDark 
-          ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-slate-200' 
-          : 'bg-gradient-to-b from-slate-900/80 to-transparent backdrop-blur-md'
-      }`}>
+      <header className={`sticky top-0 z-50 transition-all duration-300 ${isDark
+        ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-slate-200'
+        : 'bg-gradient-to-b from-slate-900/80 to-transparent backdrop-blur-md'
+        }`}>
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className={`w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all ${
-                isDark ? '' : 'ring-2 ring-white/30'
-              }`}>
-                <span className="text-white font-bold text-lg">H</span>
-              </div>
+              <img
+                src="/hotelhub-logo.png"
+                alt="HotelHub"
+                className="w-10 h-10 shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all rounded-xl"
+              />
               <div className="hidden sm:block">
-                <span className={`text-2xl font-bold transition-colors ${
-                  isDark ? 'text-slate-900' : 'text-white'
-                }`}>HotelHub</span>
+                <span className={`text-2xl font-bold transition-colors ${isDark ? 'text-slate-900' : 'text-white'
+                  }`}>HotelHub</span>
                 <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-blue-200'}`}>Premium Stays</p>
               </div>
             </Link>
@@ -93,11 +155,23 @@ const Header = () => {
               </NavLink>
               {isAuthenticated && (
                 <>
+                  <NavLink
+                    to={isAdmin ? "/admin/dashboard" : "/user"}
+                    isDark={isDark}
+                    active={location.pathname === "/admin/dashboard" || location.pathname === "/user"}
+                  >
+                    Dashboard
+                  </NavLink>
                   <NavLink to="/bookings" isDark={isDark} active={location.pathname === "/bookings"}>
                     My Bookings
                   </NavLink>
+                  {user?.role === 'staff' && (
+                    <NavLink to="/staff" isDark={isDark} active={location.pathname === "/staff"}>
+                      Task Portal
+                    </NavLink>
+                  )}
                   {isAdmin && (
-                    <NavLink to="/admin" isDark={isDark} active={location.pathname === "/admin"}>
+                    <NavLink to="/admin/bookings" isDark={isDark} active={location.pathname.startsWith("/admin")}>
                       Admin
                     </NavLink>
                   )}
@@ -109,15 +183,14 @@ const Header = () => {
             <div className="hidden md:flex items-center space-x-4">
               {/* SOS Button - ENHANCED */}
               <div className="relative group">
-                <button 
+                <button
                   onClick={() => setSosClicked(!sosClicked)}
-                  className={`relative px-5 py-2.5 rounded-full font-bold text-sm overflow-hidden transition-all duration-300 flex items-center gap-2 ${
-                    sosClicked 
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-500/50' 
-                      : isDark
-                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                        : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
-                  }`}
+                  className={`relative px-5 py-2.5 rounded-full font-bold text-sm overflow-hidden transition-all duration-300 flex items-center gap-2 ${sosClicked
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/50'
+                    : isDark
+                      ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                      : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                    }`}
                 >
                   <span className="animate-pulse">🆘</span>
                   <span>SOS 24/7</span>
@@ -144,11 +217,10 @@ const Header = () => {
                             option.action()
                             setSosClicked(false)
                           }}
-                          className={`w-full p-4 rounded-xl text-left transition-all hover:scale-105 border-2 ${
-                            option.color === 'green'
-                              ? 'bg-green-50 border-green-200 hover:border-green-600'
-                              : 'bg-blue-50 border-blue-200 hover:border-blue-600'
-                          }`}
+                          className={`w-full p-4 rounded-xl text-left transition-all hover:scale-105 border-2 ${option.color === 'green'
+                            ? 'bg-green-50 border-green-200 hover:border-green-600'
+                            : 'bg-blue-50 border-blue-200 hover:border-blue-600'
+                            }`}
                         >
                           <p className="font-bold text-slate-900 text-lg">{option.icon} {option.label}</p>
                           <p className={`text-sm ${option.color === 'green' ? 'text-green-600' : 'text-blue-600'}`}>
@@ -166,6 +238,82 @@ const Header = () => {
                 )}
               </div>
 
+              {/* Notification Bell */}
+              {isAuthenticated && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className={`p-2 rounded-full transition-all relative ${isDark ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/10 text-white'
+                      }`}
+                  >
+                    <span className="text-xl">🔔</span>
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-bounce">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-fade-in-scale">
+                      <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-900">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllRead}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center text-slate-400">
+                            <p className="text-2xl mb-2">📭</p>
+                            <p className="text-sm">No notifications yet</p>
+                          </div>
+                        ) : (
+                          notifications.map((n) => (
+                            <div
+                              key={n._id}
+                              onClick={() => handleNotificationClick(n)}
+                              className={`p-4 border-b border-slate-50 hover:bg-blue-50 cursor-pointer transition-colors ${!n.isRead ? 'bg-blue-50/40' : ''
+                                }`}
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${n.type === 'emergency' ? 'bg-red-100 text-red-600' :
+                                    n.type === 'success' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+                                  }`}>
+                                  {n.type}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <p className={`font-bold text-sm text-slate-900 ${!n.isRead ? 'pr-3' : ''}`}>
+                                {n.title}
+                                {!n.isRead && <span className="inline-block w-2 h-2 bg-blue-600 rounded-full ml-2"></span>}
+                              </p>
+                              <p className="text-xs text-slate-600 mt-1 line-clamp-2">{n.message}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="p-3 bg-slate-50 text-center border-t border-slate-100">
+                        <Link
+                          to="/user"
+                          onClick={() => setShowNotifications(false)}
+                          className="text-xs font-bold text-slate-500 hover:text-slate-900"
+                        >
+                          View Dashboard
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Auth */}
               {isAuthenticated ? (
                 <div className="flex items-center gap-3">
@@ -173,15 +321,14 @@ const Header = () => {
                     <p className="font-semibold">{user?.name}</p>
                     <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-blue-200'}`}>{user?.email}</p>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleLogout} 
-                    className={`${
-                      isDark 
-                        ? 'border-slate-300 text-slate-900 hover:bg-slate-100' 
-                        : 'border-white/30 text-white hover:bg-white/10'
-                    }`}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLogout}
+                    className={`${isDark
+                      ? 'border-slate-300 text-slate-900 hover:bg-slate-100'
+                      : 'border-white/30 text-white hover:bg-white/10'
+                      }`}
                   >
                     Logout
                   </Button>
@@ -189,21 +336,20 @@ const Header = () => {
               ) : (
                 <div className="flex gap-2">
                   <Link to="/login">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className={`${
-                        isDark 
-                          ? 'border-slate-300 text-slate-900 hover:bg-slate-100' 
-                          : 'border-white/30 text-white hover:bg-white/10'
-                      }`}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`${isDark
+                        ? 'border-slate-300 text-slate-900 hover:bg-slate-100'
+                        : 'border-white/30 text-white hover:bg-white/10'
+                        }`}
                     >
                       Login
                     </Button>
                   </Link>
                   <Link to="/register">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                     >
                       Register
@@ -215,13 +361,13 @@ const Header = () => {
 
             {/* Mobile Menu */}
             <div className="md:hidden flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => setSosClicked(!sosClicked)}
                 className="px-3 py-1.5 rounded-full text-xs font-bold text-red-600 bg-red-100 hover:bg-red-200 transition animate-pulse"
               >
                 🆘 SOS
               </button>
-              <button 
+              <button
                 className={`p-2 rounded-lg transition ${isDark ? 'hover:bg-slate-100' : 'hover:bg-white/10'}`}
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
@@ -249,11 +395,14 @@ const Header = () => {
               </MobileNavLink>
               {isAuthenticated && (
                 <>
+                  <MobileNavLink to={isAdmin ? "/admin/dashboard" : "/user"} onClick={() => setMobileMenuOpen(false)}>
+                    📊 Dashboard
+                  </MobileNavLink>
                   <MobileNavLink to="/bookings" onClick={() => setMobileMenuOpen(false)}>
                     📚 My Bookings
                   </MobileNavLink>
                   {isAdmin && (
-                    <MobileNavLink to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                    <MobileNavLink to="/admin/bookings" onClick={() => setMobileMenuOpen(false)}>
                       ⚙️ Admin
                     </MobileNavLink>
                   )}
@@ -292,11 +441,10 @@ const Header = () => {
                     option.action()
                     setSosClicked(false)
                   }}
-                  className={`w-full p-3 rounded-lg text-left font-bold transition ${
-                    option.color === 'green'
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                  }`}
+                  className={`w-full p-3 rounded-lg text-left font-bold transition ${option.color === 'green'
+                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                    }`}
                 >
                   {option.icon} {option.label}: {option.value}
                 </button>
@@ -345,15 +493,14 @@ const NavLink = ({ to, href, isDark, children, active }) => {
   return (
     <Component
       {...props}
-      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all group relative ${
-        active
-          ? isDark
-            ? 'text-blue-600 bg-blue-50'
-            : 'text-blue-300 bg-blue-500/20'
-          : isDark
-            ? 'text-slate-700 hover:text-blue-600'
-            : 'text-slate-200 hover:text-white'
-      }`}
+      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all group relative ${active
+        ? isDark
+          ? 'text-blue-600 bg-blue-50'
+          : 'text-blue-300 bg-blue-500/20'
+        : isDark
+          ? 'text-slate-700 hover:text-blue-600'
+          : 'text-slate-200 hover:text-white'
+        }`}
     >
       {children}
       {active && (

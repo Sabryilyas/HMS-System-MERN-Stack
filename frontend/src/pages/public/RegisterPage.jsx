@@ -12,6 +12,16 @@ import { useAuth } from "../../context/AuthContext"
 const RegisterPage = () => {
   const navigate = useNavigate()
   const { register } = useAuth()
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    password: "",
+    confirmPassword: "",
+  })
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
 
   const handleChange = (e) => {

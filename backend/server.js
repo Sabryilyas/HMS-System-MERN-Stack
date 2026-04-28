@@ -49,13 +49,21 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Rate limiting middleware
+// Rate limiting middleware - General API limiter
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 500, // Increased limit to handle dashboard with multiple charts
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api', limiter);
+
+// Higher rate limit for admin analytics (dashboard loads multiple charts at once)
+const analyticsLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute for analytics
+  message: 'Too many analytics requests, please try again later.'
+});
+app.use('/api/admin/analytics', analyticsLimiter);
 
 // ============================================
 // ROUTES
@@ -151,13 +159,53 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ============================================
 
-app.listen(PORT, () => {
+// ============================================
+// SOCKET.IO & SERVER SETUP
+// ============================================
+
+import http from 'http';
+import { Server } from 'socket.io';
+
+const server = http.createServer(app);
+export const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true
+  }
+});
+
+// Middleware to attach io to req
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// Socket connection handler
+io.on('connection', (socket) => {
+  console.log(`✅ Socket connected: ${socket.id}`);
+
+  // Allow users to join a room based on their userID
+  socket.on('join', (userId) => {
+    if (userId) {
+      socket.join(userId);
+      console.log(`👤 User joined room: ${userId}`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`❌ Socket disconnected: ${socket.id}`);
+  });
+});
+
+server.listen(PORT, () => {
   console.log('');
   console.log('════════════════════════════════════════════════════════');
   console.log(`✅ HMS Backend Server is running`);
   console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`✅ Server URL: http://localhost:${PORT}`);
   console.log(`✅ Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`✅ Socket.io: Enabled`);
   console.log('════════════════════════════════════════════════════════');
   console.log('');
 });

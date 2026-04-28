@@ -69,6 +69,11 @@ export const login = async (req, res, next) => {
             });
         }
 
+        // Audit Log for Staff
+        if (user.role === 'staff') {
+            console.log(`[AUDIT] Staff Login: ${user.email} at ${new Date().toISOString()}`);
+        }
+
         sendTokenResponse(user, 200, res);
     } catch (err) {
         next(err);

@@ -6,9 +6,15 @@ export const getAllRooms = async (filters = {}) => {
   const params = new URLSearchParams();
 
   if (filters.type) params.append('type', filters.type);
+  if (filters.branch) params.append('branch', filters.branch);
   if (filters.minPrice) params.append('price[gte]', filters.minPrice);
   if (filters.maxPrice) params.append('price[lte]', filters.maxPrice);
+  // Support both key names
   if (filters.guests) params.append('maxOccupancy[gte]', filters.guests);
+  if (filters.minOccupancy) params.append('maxOccupancy[gte]', filters.minOccupancy);
+
+  if (filters.checkIn) params.append('checkIn', filters.checkIn);
+  if (filters.checkOut) params.append('checkOut', filters.checkOut);
 
   const response = await api.get(`/rooms?${params.toString()}`);
   return response.data.data;

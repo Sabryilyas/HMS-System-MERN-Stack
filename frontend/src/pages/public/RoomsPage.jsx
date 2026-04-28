@@ -14,8 +14,11 @@ const RoomsPage = () => {
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     type: "",
-    maxPrice: 600,
+    branch: "",
+    maxPrice: 100000,
     minOccupancy: 1,
+    checkIn: "",
+    checkOut: ""
   })
 
   useEffect(() => {
@@ -35,6 +38,7 @@ const RoomsPage = () => {
   }, [filters])
 
   const roomTypes = ["standard", "suite", "family", "penthouse"]
+  const branches = ["Colombo", "Kandy", "Jaffna", "Vavuniya", "Galle"]
 
   // Helper functions for colors (must be before useMemo)
   const getBorderColor = (type) => {
@@ -62,9 +66,9 @@ const RoomsPage = () => {
     return rooms.map((room) => ({
       image: room.images?.[0] || "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800",
       title: room.name,
-      subtitle: `$${room.discountPrice || room.price}/night`,
+      subtitle: `${Math.round(room.discountPrice || room.price).toLocaleString('en-US')} LKR/night`,
       handle: `${room.maxOccupancy} guests • ${room.size} sqft`,
-      location: room.type?.charAt(0).toUpperCase() + room.type?.slice(1),
+      location: room.branch || room.type?.charAt(0).toUpperCase() + room.type?.slice(1),
       borderColor: getBorderColor(room.type),
       gradient: getGradient(room.type),
       url: `/rooms/${room._id || room.id}`
@@ -90,6 +94,28 @@ const RoomsPage = () => {
               <h2 className="text-lg font-semibold mb-6 text-slate-900">Filter Rooms</h2>
 
               <div className="space-y-6">
+                {/* Date Range */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">Availability</label>
+                  <div className="space-y-2">
+                    <input
+                      type="date"
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-900"
+                      value={filters.checkIn}
+                      onChange={(e) => setFilters({ ...filters, checkIn: e.target.value })}
+                      placeholder="Check-in"
+                    />
+                    <input
+                      type="date"
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-900"
+                      value={filters.checkOut}
+                      onChange={(e) => setFilters({ ...filters, checkOut: e.target.value })}
+                      min={filters.checkIn}
+                      placeholder="Check-out"
+                    />
+                  </div>
+                </div>
+
                 {/* Room Type */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">Room Type</label>
@@ -107,16 +133,34 @@ const RoomsPage = () => {
                   </select>
                 </div>
 
+                {/* Branch Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">Branch Location</label>
+                  <select
+                    value={filters.branch}
+                    onChange={(e) => setFilters({ ...filters, branch: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white text-slate-900 text-sm"
+                  >
+                    <option value="">All Branches</option>
+                    {branches.map((branch) => (
+                      <option key={branch} value={branch}>
+                        {branch}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Price Range */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Max Price</label>
-                    <span className="text-lg font-bold text-blue-600">${filters.maxPrice}</span>
+                    <span className="text-lg font-bold text-blue-600">{filters.maxPrice.toLocaleString('en-US')} LKR</span>
                   </div>
                   <input
                     type="range"
-                    min="50"
-                    max="600"
+                    min="10000"
+                    max="100000"
+                    step="5000"
                     value={filters.maxPrice}
                     onChange={(e) =>
                       setFilters({
@@ -127,8 +171,8 @@ const RoomsPage = () => {
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                   />
                   <div className="flex justify-between text-xs text-slate-500 mt-2">
-                    <span>$50</span>
-                    <span>$600</span>
+                    <span>10,000 LKR</span>
+                    <span>100,000 LKR</span>
                   </div>
                 </div>
 
@@ -159,7 +203,8 @@ const RoomsPage = () => {
                   onClick={() =>
                     setFilters({
                       type: "",
-                      maxPrice: 600,
+                      branch: "",
+                      maxPrice: 100000,
                       minOccupancy: 1,
                     })
                   }
@@ -189,7 +234,8 @@ const RoomsPage = () => {
                   onClick={() =>
                     setFilters({
                       type: "",
-                      maxPrice: 600,
+                      branch: "",
+                      maxPrice: 100000,
                       minOccupancy: 1,
                     })
                   }

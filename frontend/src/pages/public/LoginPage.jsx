@@ -33,8 +33,16 @@ const LoginPage = () => {
     setLoading(true)
 
     try {
-      await login(formData.email, formData.password)
-      navigate("/dashboard")
+      const response = await login(formData.email, formData.password)
+      const role = response.user?.role
+
+      if (role === 'admin') {
+        navigate("/admin")
+      } else if (role === 'staff') {
+        navigate("/staff")
+      } else {
+        navigate("/dashboard")
+      }
     } catch (err) {
       setError(err.message)
     } finally {
